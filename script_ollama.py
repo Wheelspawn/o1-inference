@@ -276,13 +276,19 @@ def above(a,b,stacks):
     except ValueError:
         return False
 
+def not_above(a,b,stacks):
+    return not above(a,b,stacks)
+
+def on_different_stack(a,b,stacks):
+    return stacks_index(a,stacks)[0] != stacks_index(b,stacks)[0]
+
 def check_proof(props,stacks):
     
     # list of regex search patterns
     therefore = "([A-Za-z\s]+).( Therefore )([A-Za-z\s]+)"
-    connectives = "( and | or )"
+    connective = "( and | or )"
     is_above = "( and )|( is above )"
-    not_above = "([A-Za-z]+)( is not above )([A-Za-z\s]+)"
+    # not_above = "([A-Za-z]+)( is not above )([A-Za-z\s]+)"
     placed_on_table = "([A-Za-z]+)( is placed on the table)"
     diff_stack = "([A-Za-z]+)( is on a different stack than )([A-Za-z\s]+)"
     
@@ -306,46 +312,83 @@ def check_proof(props,stacks):
                 # what pattern does the antecedent follow?
                 # connectives: ' and ' or ' or '
                 
-                op=re.split(connectives, ant)
-                print(op)
+                op=re.split(connective, ant)
                 
-                if (op_split:=re.split(" and | is above ", ant)):
-                    print("1: ", op_split)
-                    for i in range(0,len(op_split),2):
-                        # check if X is above Y
-                        x = op_split[i]
-                        y = op_split[i+1]
-                        
-                        if above(x,y,stacks) == False:
-                            ant_tval = False
-                            break
-                        
-                    # check if consequent matches antecedent and X is above Z
-                    con_split = re.split("and | is above ", ant)
-                    con_tval = (op_split[0] == con_split[0]) and (op_split[-1] == con_split[-1])
-                    
-                elif (op_split:=re.findall(not_above, op)):
-                    print("2: ", op_split)
-                    ant_tval = above(op_split[0],op_split[2])
-                    
-                elif (op_split:=re.findall(placed_on_table, op)):
-                    print("3: ", op_split)
-                    ant_tval = on_top_of(op_split[0],'t')
-                    
-                elif (op_split:=re.findall(diff_stack, op)):
-                    print("4: ", op_split)
-                    
-                    b1,b2=op_split[0],op_split[2]
-                    b1_stack = stacks_index(b1,stacks)[0]
-                    b2_stack = stacks_index(b2,stacks)[0]
-                    
-                    ant_tval = (b1_stack == b2_stack)
-                else:
-                    ant_tval = False
+                parse = []
                 
-                print("ant_tval: ", ant_tval)
-                print("con_tval: ", con_tval)
-                tvals.append(ant_tval and con_tval)
+                ant_split = re.split(" and ", ant)
+                con_split = re.split(" and ", con)
+                
+                print(ant_split)
+                print(con_split)
+                
+                if (len(ant_split) <= 2 and len(con_split) == 1):
+                
+                    if (ant_split and con_split):
+                        for o in ant_split+con_split:
+                            if (re.match("([A-Za-z]+)( is above )([A-Za-z\s]+)", o)):
+                                b1,b2 = re.split(" is above ", o)
+                                parse.append((b1,b2,above))
+                            elif (re.match("([A-Za-z]+)( is not above )([A-Za-z\s]+)", o)):
+                                b1,b2 = re.split(" is not above ", o)
+                                parse.append((b1,b2,not_above))
+                            elif (re.match("([A-Za-z]+)( is on a different stack than )([A-Za-z\s]+)", o)):
+                                b1,b2 = re.split(" is on a different stack than ", o)
+                                parse.append((b1,b2,on_different_stack))
+                            elif (re.match("([A-Za-z]+)( is placed on the table)", o)):
+                                b1,_ = re.split(" is placed on the table", o)
+                                parse.append((b1,'t',on_top_of))
+                            else:
+                                # didn't match syntax
+                                tvals.append(False)
+                        
+                        parsed_ant = parse[0:len(ant_split)]
+                        parsed_con = parse[len(ant_split)]
+                        
+                        print(stacks)
+                        print()
+                        for e in parsed_ant:
+                            print(e)
+                        print()
+                        print(parsed_con)
+                        print()
+                        
+                        f_0 = parsed_ant[0][2]
+                        f_1 = parsed_ant[0][2]
+                        f_2 = parsed_ant[0][2]
+                        
+                        if (f_0 == f_1 == f_2 == above
+                            or f_0 == f_1 == on_different_stack and f_2 == not_above):
+                                
+                            return (parsed_con[0] == parsed_ant[0][0]
+                                and parsed_con[1] == parsed_ant[1][1]
+                                and parsed_ant[0][1] == parsed_ant[1][0]
+                                and parsed_ant[0][2](parsed_ant[0][0], parsed_ant[0][1])
+                                and parsed_ant[1][2](parsed_ant[1][0], parsed_ant[1][1])
+                                and parsed_con[2](parsed_con[0], parsed_con[1]))
+                        
+                    else:
+                        return [False,False,False,False]
+                    
+                    
+                    # backtracking if props in antecedent > 2
+                    '''
+                    for p in parsed_con:
+                        comp = p[2]
+                        if comp == above:
+                            backtrack = p[0]
+                            while backtrack in [n[0] for n in parsed_ant]:
+                                ind = [n[0] for n in parsed_ant].index(backtrack)
+                                backtrack = parsed_ant[ind][1]
+                                print(backtrack)
+                            if backtrack == p[1]:
+                                pass
+                        elif comp == on_different_stack:
+                            pass
+                        elif comp == on_top_of:
+                            pass'''
+                            
+                    
             else:
                 # string not in proper If ... therefore ... . syntax
                 tvals.append(False)
@@ -356,9 +399,12 @@ def check_proof(props,stacks):
             
     return tvals
 
-a = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Foxtrot is above Hotel."],[['t','Hotel','Sierra','Foxtrot'],['t']])
-b = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Hotel is not above Foxtrot."],[['t','Hotel','Sierra','Foxtrot'],['t']])
-c = check_proof(["Alfa is placed on the table and Foxtrot is placed on the table. Therefore Alfa is on a different stack than Foxtrot."],[['t','Alfa','Foxtrot'],['t','Golf']])
+# a = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Foxtrot is above Hotel and Hotel is not above Foxtrot."],[['t','Hotel','Sierra','Foxtrot'],['t']])
+# b = check_proof(["Foxtrot is above Alfa and Alfa is above Hotel. Therefore Foxtrot is above Hotel."],[['t','Sierra','Hotel','Golf','Foxtrot'],['t']])
+# c = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Hotel is not above Foxtrot."],[['t','Hotel','Sierra','Foxtrot'],['t']])
+# d = check_proof(["Alfa is placed on the table and Foxtrot is placed on the table. Therefore Alfa is on a different stack than Foxtrot."],[['t','Alfa','Foxtrot'],['t','Golf']])
+# e = check_proof(["Alfa is on a different stack than Charlie. Therefore Alfa is not above Charlie."],[['t','Charlie','Sierra'],['t','Hotel', 'Alfa','Foxtrot']])
+f = check_proof(["Foxtrot is above Alfa. Therefore Alfa is not above Foxtrot."],[['t','Sierra','Hotel','Golf','Foxtrot'],['t']])
 
 '''
 if __name__ == "__main__":

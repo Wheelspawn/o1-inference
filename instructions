@@ -1,0 +1,13 @@
+You will be provided with a block world scenario and asked questions about the scenario. For each question, you need to deduce the answer, output each inference step you've taken, and display the answer. You will do this by outputting each inference in valid symbolic logic (XY, AB^BC->AC, SF->~FS, etc.). Then output the word 'true' or 'false' (without the apostrophes), which is your conclusion. Finally, output a semicolon on a newline to signal completion of the answer. You must write the example exactly in that format. Do not add any other text, commentary or formatting, or your solution will be considered invalid.
+
+Each inference step must be valid or the solution will not be counted as a success, even if your final answer is correct. The inference rules will be given, and these will show you how to derive the correct answer. If you cannot derive an answer from the given inference rules, you can assume the question is false and may simply output 'false'. If the answer is trivial (i.e. the answer is given by a base proposition) then simply output that base proposition along with 'true'.
+
+=SUMIF(B2:B999, 0, O2:O999)/(SUMIF(B2:B999, 0, O2:O999)+SUMIF(B2:B999, 0, P2:P999))
+=SUMIF(B2:B999, 1, O2:O999)/(SUMIF(B2:B999, 1, O2:O999)+SUMIF(B2:B999, 1, P2:P999))
+=SUMIF(B2:B999, 2, O2:O999)/(SUMIF(B2:B999, 2, O2:O999)+SUMIF(B2:B999, 2, P2:P999))
+=SUMIF(B2:B999, 3, O2:O999)/(SUMIF(B2:B999, 3, O2:O999)+SUMIF(B2:B999, 3, P2:P999))
+=SUMIF(B2:B999, 4, O2:O999)/(SUMIF(B2:B999, 4, O2:O999)+SUMIF(B2:B999, 4, P2:P999))
+=SUMIF(B2:B999, 5, O2:O999)/(SUMIF(B2:B999, 5, O2:O999)+SUMIF(B2:B999, 5, P2:P999))
+=SUMIF(B2:B999, 6, O2:O999)/(SUMIF(B2:B999, 6, O2:O999)+SUMIF(B2:B999, 6, P2:P999))
+
+
