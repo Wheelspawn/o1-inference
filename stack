@@ -1,0 +1,45 @@
+s0 = ['t', 'Foxtrot', 'Sierra', 'Whiskey', 'Xray', 'Golf']
+s1 = ['t', 'Hotel', 'Alfa']
+
+Xray is above Whiskey and Whiskey is above Sierra. Therefore Xray is above Sierra.
+while s0.peek() != 'Xray'
+  s2.push(s0.pop())
+  
+a=pop(s0)
+b=pop(s0)
+s0.push(a)
+
+s0.restore(s2)
+return a == 'Whiskey' and b == 'Sierra'
+
+s0 = ['t', 'Foxtrot', 'Sierra', 'Xray', 'Golf']
+s1 = ['t', 'Hotel', 'Alfa']
+
+Xray is above Sierra and Sierra is above Foxtrot. Therefore Xray is above Foxtrot.
+
+while s0.peek() != 'Xray'
+  s2.push(s0.pop())
+  
+a=pop(s0)
+b=pop(s0)
+s0.push(a)
+
+s0.restore(s2)
+return a == 'Sierra' and b == 'Foxtrot'
+
+s0 = ['t', 'Foxtrot', 'Xray', 'Golf']
+s1 = ['t', 'Hotel', 'Alfa']
+
+
+Foxtrot is placed on the table and Hotel is placed on the table. Therefore Foxtrot is on a different stack than Hotel.
+pop(s0)
+pop(s1)
+s0.peek() == s1.peek() == 't'
+
+Sierra is above Foxtrot and Foxtrot is on a different stack than Hotel. Therefore Sierra is on a different stack than Hotel.
+
+
+Sierra is on a different stack than Hotel. Therefore Sierra is not above Hotel.
+Alfa is above Hotel and Sierra is not above Hotel. Therefore Sierra is not above Alfa.
+
+

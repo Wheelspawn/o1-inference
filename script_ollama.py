@@ -289,10 +289,6 @@ def check_proof(props,stacks):
     # list of regex search patterns
     therefore = "([A-Za-z\s]+).( Therefore )([A-Za-z\s]+)"
     connective = "( and | or )"
-    is_above = "( and )|( is above )"
-    # not_above = "([A-Za-z]+)( is not above )([A-Za-z\s]+)"
-    placed_on_table = "([A-Za-z]+)( is placed on the table)"
-    diff_stack = "([A-Za-z]+)( is on a different stack than )([A-Za-z\s]+)"
     
     # will be true for every true inference and False for every false inference
     tvals = []
@@ -308,21 +304,13 @@ def check_proof(props,stacks):
                 ant = r[0] # antecedent
                 con = r[2] # consequent
                 
-                ant_tval = True
-                con_tval = True
-                
                 # what pattern does the antecedent follow?
-                # connectives: ' and ' or ' or '
-                
-                op=re.split(connective, ant)
+                # connectives: ' and '
                 
                 parse = []
                 
                 ant_split = re.split(" and ", ant)
                 con_split = re.split(" and ", con)
-                
-                print(ant_split)
-                print(con_split)
                 
                 if (len(ant_split) <= 2 and len(con_split) == 1):
                 
@@ -343,80 +331,112 @@ def check_proof(props,stacks):
                             else:
                                 # didn't match syntax
                                 tvals.append(False)
+                                break
                                 
                         parsed_ant = parse[0:len(ant_split)]
                         parsed_con = parse[len(ant_split)]
                         
                         print(stacks)
-                        print()
-                        for e in parsed_ant:
-                            print(e)
-                        print()
+                        print(parsed_ant)
                         print(parsed_con)
                         print()
                         
                         f_0 = parsed_ant[0][2]
-                        f_2 = parsed_con[2]
+                        f_c = parsed_con[2]
                         
                         if len(parsed_ant) == 1:
                             
-                            if (f_0 == f_2 == on_different_stack):
+                            a1,a2=parsed_ant[0][0],parsed_ant[0][1]
+                            c1,c2=parsed_con[0],parsed_con[1]
+                            
+                            evaluated = f_0(a1,a2,stacks) and f_c(c1,c2,stacks)
+                            
+                            # 1. If block X is above block Y, block Y is not above block X.
+                            if (f_0 == above and f_c == not_above):
                                 
-                                return (parsed_ant[0] == parsed_ant[0]
-                                    and parsed_ant[1] == parsed_ant[1]
-                                    and f_0(parsed_ant[0][0], parsed_ant[0][1])
-                                    and f_2(parsed_con[0], parsed_con[1]))
+                                tvals.append((a1 == c2 and a2 == c1) and evaluated)
+                            
+                            # 7. If block X is on a different stack than block Y, then block X is not above block Y.
+                            if (f_0 == on_different_stack and f_c == not_above):
+                                tvals.append((a1 == c1 and a2 == c2) and evaluated)
                             
                         elif len(parsed_ant) == 2:
                             
                             f_1 = parsed_ant[1][2]
                             
-                            if (f_0 == f_1 == f_2 == above):
-                                
-                                return (parsed_con[0] == parsed_ant[0][0]
-                                    and parsed_con[1] == parsed_ant[1][1]
-                                    and parsed_ant[0][1] == parsed_ant[1][0]
-                                    and f_0(parsed_ant[0][0], parsed_ant[0][1])
-                                    and f_1(parsed_ant[1][0], parsed_ant[1][1])
-                                    and f_2(parsed_con[0], parsed_con[1]))
-                        
-                    else:
-                        return [False,False,False,False]
-                    
-                    # backtracking if props in antecedent > 2
-                    '''
-                    for p in parsed_con:
-                        comp = p[2]
-                        if comp == above:
-                            backtrack = p[0]
-                            while backtrack in [n[0] for n in parsed_ant]:
-                                ind = [n[0] for n in parsed_ant].index(backtrack)
-                                backtrack = parsed_ant[ind][1]
-                                print(backtrack)
-                            if backtrack == p[1]:
-                                pass
-                        elif comp == on_different_stack:
-                            pass
-                        elif comp == on_top_of:
-                            pass'''
+                            a1,a2=parsed_ant[0][0],parsed_ant[0][1]
+                            b1,b2=parsed_ant[1][0],parsed_ant[1][1]
+                            c1,c2=parsed_con[0],parsed_con[1]
                             
-                    
-            else:
-                # string not in proper If ... therefore ... . syntax
-                tvals.append(False)
+                            evaluated = f_0(a1,a2,stacks) and f_1(b1,b2,stacks) and f_c(c1,c2,stacks)
+                            
+                            # 2. If block X is above block Y and block Y is above block Z, then block X is above block Z.
+                            if (f_0 == f_1 == f_c == above):
+                                tvals.append((a2 == b1 and b2 == c2 and c1 == a1) and evaluated)
+                            
+                            # 3. If block X is above block Y and block Z is not above block Y, then block Z is not above block X.
+                            if (f_0 == above and f_1 == not_above and f_c == not_above):
+                                tvals.append((a1 == c2 and a2 == b2 and b1 == c1) and evaluated)
+                            
+                            # 4. If block X is above block Y and block Z is above block Y, then block Z is not above block X.
+                            if (f_0 == f_1 == above and f_c == not_above):
+                                tvals.append((a2 == b1 and b2 == c1 and c2 == a1) and evaluated)
+                            
+                            # 5. If block X is placed on the table and block Y is placed on the table, then block X is on a different stack than block Y.
+                            if (f_0 == f_1 == on_top_of and f_c == on_different_stack):
+                                tvals.append((a1 == c1 and b1 == c2) and evaluated)
+                            
+                            # 6. If block X is above block Z and block Z is on a different stack than block Y, then block X is on a different stack than block Y.
+                            if (f_0 == above and f_1 == on_different_stack and f_c == on_different_stack):
+                                tvals.append((a1 == c1 and a2 == b1 and b2 == c2 and a1 == c1) and evaluated)
+                                
+                        else:
+                            tvals.append(False)
+                            
         except Exception as err:
             # something unknown went wrong
-            print(err)
+            print("Err: ", err)
             tvals.append(False)
             
     return tvals
 
-# a = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Foxtrot is above Hotel and Hotel is not above Foxtrot."],[['t','Hotel','Sierra','Foxtrot'],['t']])
-# b = check_proof(["Foxtrot is above Alfa and Alfa is above Hotel. Therefore Foxtrot is above Hotel."],[['t','Sierra','Hotel','Golf','Foxtrot'],['t']])
-# c = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Hotel is not above Foxtrot."],[['t','Hotel','Sierra','Foxtrot'],['t']])
-# d = check_proof(["Alfa is placed on the table and Foxtrot is placed on the table. Therefore Alfa is on a different stack than Foxtrot."],[['t','Alfa','Foxtrot'],['t','Golf']])
-# e = check_proof(["Alfa is on a different stack than Charlie. Therefore Alfa is not above Charlie."],[['t','Charlie','Sierra'],['t','Hotel', 'Alfa','Foxtrot']])
-f = check_proof(["Foxtrot is above Alfa. Therefore Alfa is not above Foxtrot."],[['t','Sierra','Hotel','Golf','Foxtrot'],['t']])
+'''
+a = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Foxtrot is above Hotel."],[['t','Hotel','Sierra','Foxtrot'],['t']])
+b = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Foxtrot is above Hotel."],[['t','Sierra','Hotel','Golf','Foxtrot'],['t']])
+c = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Hotel is not above Foxtrot."],[['t','Hotel','Sierra','Foxtrot'],['t']])
+d = check_proof(["Foxtrot is above Sierra and Sierra is above Hotel. Therefore Hotel is not above Foxtrot."],[['t','Foxtrot','Hotel','Sierra'],['t']])
+e = check_proof(["Alfa is placed on the table and Foxtrot is placed on the table. Therefore Alfa is on a different stack than Foxtrot."],[['t','Alfa','Golf'],['t','Foxtrot']])
+f = check_proof(["Alfa is placed on the table and Foxtrot is placed on the table. Therefore Alfa is on a different stack than Foxtrot."],[['t','Alfa','Foxtrot'],['t','Golf']])
+g = check_proof(["Alfa is on a different stack than Charlie. Therefore Alfa is not above Charlie."],[['t','Charlie','Sierra'],['t','Hotel', 'Alfa','Foxtrot']])
+h = check_proof(["Alfa is on a different stack than Charlie. Therefore Alfa is not above Charlie."],[['t','Charlie','Sierra','Alfa'],['t','Hotel','Foxtrot']])
+i = check_proof(["Hotel is above Charlie and Charlie is on a different stack than Whiskey. Therefore Hotel is on a different stack than Whiskey."],[['t','Charlie','Hotel'],['t','Bravo','Whiskey']])
+j = check_proof(["Hotel is above Charlie and Charlie is on a different stack than Whiskey. Therefore Hotel is on a different stack than Whiskey."],[['t','Whiskey','Charlie','Hotel'],['t','Bravo']])
+k = check_proof(["Foxtrot is above Sierra. Therefore Sierra is not above Foxtrot."],[['t','Hotel','Sierra','Foxtrot'],['t']])
+l = check_proof(["Foxtrot is above Sierra. Therefore Sierra is not above Foxtrot."],[['t','Hotel','Golf','Foxtrot','Sierra'],['t']])
+'''
+
+m = check_proof(["Foxtrot is placed on the table and Hotel is placed on the table. Therefore Foxtrot is on a different stack than Hotel.",
+                 "Sierra is above Foxtrot and Foxtrot is on a different stack than Hotel. Therefore Sierra is on a different stack than Hotel.",
+                 "Sierra is on a different stack than Hotel. Therefore Sierra is not above Hotel.",
+                 "Alfa is above Hotel and Sierra is not above Hotel. Therefore Sierra is not above Alfa."],
+                [['t','Foxtrot','Sierra','Whiskey','Xray'],['t','Hotel','Alfa']])
+
+'''
+print(a)
+print(b)
+print(c)
+print(d)
+print(e)
+print(f)
+print(g)
+print(h)
+print(i)
+print(j)
+print(k)
+print(l)
+'''
+
+print(m)
 
 '''
 if __name__ == "__main__":
