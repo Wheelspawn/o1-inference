@@ -1,5 +1,5 @@
 import csv
-from openai import OpenAI
+# from openai import OpenAI
 import os
 import random
 import re
@@ -16,10 +16,11 @@ def main():
     
     current_model = "gpt-4o"
     
+    '''
     client = OpenAI(
         # This is the default and can be omitted
         api_key=os.environ.get("OPENAI_API_KEY"),
-    )
+    )'''
     
     names = ["Alfa",
              "November",
@@ -157,6 +158,7 @@ Your responses:
             
                 stacks_letters_only = [['t'] + [e[0] for e in s] for s in stacks]
                 
+                '''
                 chat_completion = client.chat.completions.create(
                     messages=[
                         {
@@ -165,7 +167,7 @@ Your responses:
                         }
                     ],
                     model=current_model,
-                )
+                ) '''
                 
                 print(chat_completion.choices[0].message.content)
                 responses = chat_completion.choices[0].message.content.split(";")[:-1]
@@ -341,7 +343,7 @@ def check_proof(props,stacks):
                             else:
                                 # didn't match syntax
                                 tvals.append(False)
-                        
+                                
                         parsed_ant = parse[0:len(ant_split)]
                         parsed_con = parse[len(ant_split)]
                         
@@ -354,22 +356,32 @@ def check_proof(props,stacks):
                         print()
                         
                         f_0 = parsed_ant[0][2]
-                        f_1 = parsed_ant[0][2]
-                        f_2 = parsed_ant[0][2]
+                        f_2 = parsed_con[2]
                         
-                        if (f_0 == f_1 == f_2 == above
-                            or f_0 == f_1 == on_different_stack and f_2 == not_above):
+                        if len(parsed_ant) == 1:
+                            
+                            if (f_0 == f_2 == on_different_stack):
                                 
-                            return (parsed_con[0] == parsed_ant[0][0]
-                                and parsed_con[1] == parsed_ant[1][1]
-                                and parsed_ant[0][1] == parsed_ant[1][0]
-                                and parsed_ant[0][2](parsed_ant[0][0], parsed_ant[0][1])
-                                and parsed_ant[1][2](parsed_ant[1][0], parsed_ant[1][1])
-                                and parsed_con[2](parsed_con[0], parsed_con[1]))
+                                return (parsed_ant[0] == parsed_ant[0]
+                                    and parsed_ant[1] == parsed_ant[1]
+                                    and f_0(parsed_ant[0][0], parsed_ant[0][1])
+                                    and f_2(parsed_con[0], parsed_con[1]))
+                            
+                        elif len(parsed_ant) == 2:
+                            
+                            f_1 = parsed_ant[1][2]
+                            
+                            if (f_0 == f_1 == f_2 == above):
+                                
+                                return (parsed_con[0] == parsed_ant[0][0]
+                                    and parsed_con[1] == parsed_ant[1][1]
+                                    and parsed_ant[0][1] == parsed_ant[1][0]
+                                    and f_0(parsed_ant[0][0], parsed_ant[0][1])
+                                    and f_1(parsed_ant[1][0], parsed_ant[1][1])
+                                    and f_2(parsed_con[0], parsed_con[1]))
                         
                     else:
                         return [False,False,False,False]
-                    
                     
                     # backtracking if props in antecedent > 2
                     '''
