@@ -1,6 +1,7 @@
 import csv
 # from openai import OpenAI
 import os
+from pyswip import Prolog
 import random
 import re
 
@@ -286,12 +287,24 @@ def on_different_stack(a,b,stacks):
 
 def check_proof(props,stacks):
     
+    prolog = Prolog()
+    prolog.consult('blocks_world.pl')  # Load the generic Prolog rules
+    
+    for stack in stacks:
+        for i in range(1,len(stack)):
+            if i == 1:
+                prolog.assertz("tabled({})".format(stack[i]))
+            else:
+                print(f"directly_above({stack[i]}, {stack[i-1]})")
+                prolog.assertz("directly_above({}, {})".format(stack[i],stack[i-1]))
+    
     # list of regex search patterns
     therefore = "([A-Za-z\s]+).( Therefore )([A-Za-z\s]+)"
     connective = "( and | or )"
     
     # will be true for every true inference and False for every false inference
     tvals = []
+    parsed = []
     
     for p in props:
         
@@ -307,8 +320,6 @@ def check_proof(props,stacks):
                 # what pattern does the antecedent follow?
                 # connectives: ' and '
                 
-                parse = []
-                
                 ant_split = re.split(" and ", ant)
                 con_split = re.split(" and ", con)
                 
@@ -318,86 +329,38 @@ def check_proof(props,stacks):
                         for o in ant_split+con_split:
                             if (re.match("([A-Za-z]+)( is above )([A-Za-z\s]+)", o)):
                                 b1,b2 = re.split(" is above ", o)
-                                parse.append((b1,b2,above))
+                                parsed.append((b1,b2,"above"))
                             elif (re.match("([A-Za-z]+)( is not above )([A-Za-z\s]+)", o)):
                                 b1,b2 = re.split(" is not above ", o)
-                                parse.append((b1,b2,not_above))
+                                parsed.append((b1,b2,"not_above"))
                             elif (re.match("([A-Za-z]+)( is on a different stack than )([A-Za-z\s]+)", o)):
                                 b1,b2 = re.split(" is on a different stack than ", o)
-                                parse.append((b1,b2,on_different_stack))
+                                parsed.append((b1,b2,"on_different_stack"))
                             elif (re.match("([A-Za-z]+)( is placed on the table)", o)):
                                 b1,_ = re.split(" is placed on the table", o)
-                                parse.append((b1,'t',on_top_of))
+                                parsed.append((b1,'t',"tabled"))
                             else:
                                 # didn't match syntax
                                 tvals.append(False)
                                 break
                                 
-                        parsed_ant = parse[0:len(ant_split)]
-                        parsed_con = parse[len(ant_split)]
+                        parsed_ant = parsed[0:len(ant_split)]
+                        parsed_con = parsed[len(ant_split)]
                         
-                        print(stacks)
+                        
+                        
                         print(parsed_ant)
                         print(parsed_con)
                         print()
                         
-                        f_0 = parsed_ant[0][2]
-                        f_c = parsed_con[2]
-                        
-                        if len(parsed_ant) == 1:
-                            
-                            a1,a2=parsed_ant[0][0],parsed_ant[0][1]
-                            c1,c2=parsed_con[0],parsed_con[1]
-                            
-                            evaluated = f_0(a1,a2,stacks) and f_c(c1,c2,stacks)
-                            
-                            # 1. If block X is above block Y, block Y is not above block X.
-                            if (f_0 == above and f_c == not_above):
-                                
-                                tvals.append((a1 == c2 and a2 == c1) and evaluated)
-                            
-                            # 7. If block X is on a different stack than block Y, then block X is not above block Y.
-                            if (f_0 == on_different_stack and f_c == not_above):
-                                tvals.append((a1 == c1 and a2 == c2) and evaluated)
-                            
-                        elif len(parsed_ant) == 2:
-                            
-                            f_1 = parsed_ant[1][2]
-                            
-                            a1,a2=parsed_ant[0][0],parsed_ant[0][1]
-                            b1,b2=parsed_ant[1][0],parsed_ant[1][1]
-                            c1,c2=parsed_con[0],parsed_con[1]
-                            
-                            evaluated = f_0(a1,a2,stacks) and f_1(b1,b2,stacks) and f_c(c1,c2,stacks)
-                            
-                            # 2. If block X is above block Y and block Y is above block Z, then block X is above block Z.
-                            if (f_0 == f_1 == f_c == above):
-                                tvals.append((a2 == b1 and b2 == c2 and c1 == a1) and evaluated)
-                            
-                            # 3. If block X is above block Y and block Z is not above block Y, then block Z is not above block X.
-                            if (f_0 == above and f_1 == not_above and f_c == not_above):
-                                tvals.append((a1 == c2 and a2 == b2 and b1 == c1) and evaluated)
-                            
-                            # 4. If block X is above block Y and block Z is above block Y, then block Z is not above block X.
-                            if (f_0 == f_1 == above and f_c == not_above):
-                                tvals.append((a2 == b1 and b2 == c1 and c2 == a1) and evaluated)
-                            
-                            # 5. If block X is placed on the table and block Y is placed on the table, then block X is on a different stack than block Y.
-                            if (f_0 == f_1 == on_top_of and f_c == on_different_stack):
-                                tvals.append((a1 == c1 and b1 == c2) and evaluated)
-                            
-                            # 6. If block X is above block Z and block Z is on a different stack than block Y, then block X is on a different stack than block Y.
-                            if (f_0 == above and f_1 == on_different_stack and f_c == on_different_stack):
-                                tvals.append((a1 == c1 and a2 == b1 and b2 == c2 and a1 == c1) and evaluated)
-                                
-                        else:
-                            tvals.append(False)
-                            
         except Exception as err:
             # something unknown went wrong
             print("Err: ", err)
             tvals.append(False)
-            
+    
+    ''' for p in parsed:
+        print(p) '''
+    
     return tvals
 
 '''
@@ -414,12 +377,11 @@ j = check_proof(["Hotel is above Charlie and Charlie is on a different stack tha
 k = check_proof(["Foxtrot is above Sierra. Therefore Sierra is not above Foxtrot."],[['t','Hotel','Sierra','Foxtrot'],['t']])
 l = check_proof(["Foxtrot is above Sierra. Therefore Sierra is not above Foxtrot."],[['t','Hotel','Golf','Foxtrot','Sierra'],['t']])
 '''
-
 m = check_proof(["Foxtrot is placed on the table and Hotel is placed on the table. Therefore Foxtrot is on a different stack than Hotel.",
                  "Sierra is above Foxtrot and Foxtrot is on a different stack than Hotel. Therefore Sierra is on a different stack than Hotel.",
                  "Sierra is on a different stack than Hotel. Therefore Sierra is not above Hotel.",
                  "Alfa is above Hotel and Sierra is not above Hotel. Therefore Sierra is not above Alfa."],
-                [['t','Foxtrot','Sierra','Whiskey','Xray'],['t','Hotel','Alfa']])
+                [['t','foxtrot','sierra','whiskey','xray'],['t','hotel','alfa']])
 
 '''
 print(a)
@@ -443,3 +405,26 @@ if __name__ == "__main__":
     main()
 '''
 
+'''
+prolog = Prolog()
+prolog.consult('blocks_world.pl')
+
+prolog.assertz("directly_above(foxtrot,sierra)")
+prolog.assertz("directly_above(sierra,whiskey)")
+prolog.assertz("directly_above(whiskey,xray)")
+prolog.assertz("tabled(xray)")
+
+prolog.assertz("directly_above(hotel,alfa)")
+prolog.assertz("tabled(alfa)")
+
+print(list(prolog.query("above(whiskey,X)")))
+print()
+print(list(prolog.query("not_above(whiskey,X)")))
+print()
+print(list(prolog.query("not_above(xray,X)")))
+print()
+print(list(prolog.query("not_above(hotel,X)")))
+print()
+print(list(prolog.query("not_above(alfa,X)")))
+print()
+'''
