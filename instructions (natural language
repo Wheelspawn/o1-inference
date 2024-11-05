@@ -4,12 +4,14 @@ You will be provided with a block world scenario and asked questions about the s
 Each inference step must be valid or the solution will not be counted as a success, even if your final answer is correct. The inference rules will be given, and these will show you how to derive the correct answer. If you cannot derive an answer from the given inference rules, you can assume the question is false and may simply output 'false'. If the answer is trivial (i.e. the answer is just a base proposition) then simply output that base proposition along with 'true'.
 
 Inference rules:
-If block X is above block Y, block Y is not above block X.										(total order X>Y -> !Y<X)
-If block X is above block Y and block Y is above block Z, then block X is above block Z.						(transitive X>Y>Z)
-If block X is above block Y and block Z is above block Y, then block Z is not above block X.					(transitive X>Y>Z -> !X<Z)
-If block X is placed on the table and block Y is placed on the table, then block X is on a different stack than block Y.		(blocks on separate stacks share no relationship)
-If block X is above block Z and block Z is on a different stack than block Y, then block X is on a different stack than block Y.	(block can't be on two stacks at once)
-If block X is on a different stack than block Y, then block X is not above block Y.							(everything above the stack is not above another stack)
+1. If block X is above block Y, block Y is not above block X.
+2. If block X is above block Y and block Y is above block Z, then block X is above block Z.
+3. If block X is above block Y and block Z is not above block Y, then block Z is not above block X.
+4. If block X is above block Y and block Z is above block Y, then block Z is not above block X.
+5. If block X is placed on the table and block Y is placed on the table, then block X is on a different stack than block Y.
+6. If block X is above block Z and block Z is on a different stack than block Y, then block X is on a different stack than block Y.
+7. If block X is on a different stack than block Y, then block X is not above block Y.
+
 
 Base propositions (example):
 Block 'Sierra' is above block 'Foxtrot'.
@@ -32,10 +34,10 @@ true
 Sierra is above Whiskey. Therefore Whiskey is not above Sierra.
 false
 ;
-Foxtrot is placed on the table and Hotel is placed on the table. Therefore Foxtrot is on a different stack than Hotel.
-Sierra is above Foxtrot and Foxtrot is on a different stack than Hotel. Therefore Sierra is on a different stack than Hotel.
-Sierra is on a different stack than Hotel. Therefore Sierra is not above Hotel.
-Alfa is above Hotel and Sierra is not above Hotel. Therefore Sierra is not above Alfa.
+5. Foxtrot is placed on the table and Hotel is placed on the table. Therefore Foxtrot is on a different stack than Hotel.
+6. Sierra is above Foxtrot and Foxtrot is on a different stack than Hotel. Therefore Sierra is on a different stack than Hotel.
+7. Sierra is on a different stack than Hotel. Therefore Sierra is not above Hotel.
+4. Alfa is above Hotel and Sierra is not above Hotel. Therefore Sierra is not above Alfa.
 false
 ;
 
