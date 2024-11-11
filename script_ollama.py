@@ -308,6 +308,8 @@ def check_proof(props,stacks):
     
     for p in props:
         
+        print("Statement: ", p)
+        
         try:
             # If ... therefore ... .
             r = re.findall(therefore, p)[0]
@@ -316,6 +318,9 @@ def check_proof(props,stacks):
                 
                 ant = r[0] # antecedent
                 con = r[2] # consequent
+                
+                print("ant: ", ant)
+                print("con: ", con)
                 
                 # what pattern does the antecedent follow?
                 # connectives: ' and '
@@ -344,22 +349,33 @@ def check_proof(props,stacks):
                                 tvals.append(False)
                                 break
                                 
-                        parsed_ant = parsed[0:len(ant_split)]
-                        parsed_con = parsed[len(ant_split)]
+                        a_0 = parsed[-3]
+                        a_1 = parsed[-2]
+                        c = parsed[-1]
+                        print(a_0)
+                        print(a_1)
+                        print(c)
                         
+                        # check validity
+                        if ((a_0[2] == a_1[2] == c[2] == "above") or
+                            (a_0[2] == a_1[2] == c[2] == "naesfaef")):
+                            pass
+                        elif 
                         
+                        # if (f_0 == above and f_1 == not_above and f_c == not_above)
+                        # if (f_0 == f_1 == above and f_c == not_above)
+                        # if (f_0 == f_1 == on_top_of and f_c == on_different_stack)
+                        # if (f_0 == above and f_1 == on_different_stack and f_c == on_different_stack):
                         
-                        print(parsed_ant)
-                        print(parsed_con)
-                        print()
-                        
+                else:
+                    print("What")
+                    
+            print("\n")
+        
         except Exception as err:
             # something unknown went wrong
             print("Err: ", err)
             tvals.append(False)
-    
-    ''' for p in parsed:
-        print(p) '''
     
     return tvals
 
